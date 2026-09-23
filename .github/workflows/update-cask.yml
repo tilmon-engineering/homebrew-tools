@@ -9,7 +9,7 @@ on:
         description: Allowlisted cask token to replay
         type: choice
         required: true
-        options: [sqlite-mcp, pg-mcp]
+        options: [sqlite-mcp, pg-mcp, typedb-mcp]
       tag:
         description: Exact published stable release tag, such as v1.2.3
         type: string

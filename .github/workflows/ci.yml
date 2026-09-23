@@ -20,8 +20,8 @@ jobs:
       - name: Test release contract
         run: python3 -m unittest discover -s tests -v
       - name: Audit casks
-        run: brew audit --cask --strict tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp
+        run: brew audit --cask --strict tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp tilmon-engineering/tools/typedb-mcp
       - name: Style casks
-        run: brew style --cask tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp
+        run: brew style --cask tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp tilmon-engineering/tools/typedb-mcp
       - name: Validate skill frontmatter and contracts
         run: python3 scripts/validate_skill.py .agents/skills/homebrew-tools-release/SKILL.md

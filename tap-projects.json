@@ -35,6 +35,24 @@
       "producer_workflow": ".github/workflows/release.yml",
       "producer_publish_job": "publish",
       "producer_verification_jobs": ["verify-published", "verify-release-metadata"]
+    },
+    {
+      "token": "typedb-mcp",
+      "repository": "tilmon-engineering/typedb-mcp",
+      "binary": "typedb-mcp",
+      "checksum_asset": "SHA256SUMS",
+      "assets": {
+        "x86_64-unknown-linux-gnu": "typedb-mcp-x86_64-unknown-linux-gnu.tar.gz",
+        "aarch64-unknown-linux-gnu": "typedb-mcp-aarch64-unknown-linux-gnu.tar.gz",
+        "aarch64-apple-darwin": "typedb-mcp-aarch64-apple-darwin.tar.gz",
+        "x86_64-apple-darwin": "typedb-mcp-x86_64-apple-darwin.tar.gz"
+      },
+      "cask_path": "Casks/typedb-mcp.rb",
+      "support_note": "Release matrix built and validated on Ubuntu 24.04 GNU/glibc x86_64 and aarch64, and macOS 15 Intel and arm64.",
+      "verified_release": "v0.3.7",
+      "producer_workflow": ".github/workflows/release.yml",
+      "producer_publish_job": "publish-release",
+      "producer_verification_jobs": ["verify-published", "verify-release-metadata"]
     }
   ]
 }

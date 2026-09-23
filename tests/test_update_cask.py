@@ -78,12 +78,18 @@ class ReleaseUpdaterTests(unittest.TestCase):
 
     def test_inventory_allowlist_is_single_and_exact(self):
         projects = load_projects()
-        self.assertEqual(set(projects), {"sqlite-mcp", "pg-mcp"})
+        self.assertEqual(set(projects), {"sqlite-mcp", "pg-mcp", "typedb-mcp"})
+        self.assertEqual(projects["typedb-mcp"].repository, "tilmon-engineering/typedb-mcp")
+        self.assertEqual(projects["typedb-mcp"].binary, "typedb-mcp")
+        self.assertEqual(len(projects["typedb-mcp"].assets), 4)
         self.assertEqual(projects["sqlite-mcp"].repository, "tilmon-engineering/sqlite-mcp")
         self.assertEqual(projects["pg-mcp"].repository, "tilmon-engineering/pg-mcp")
         self.assertEqual(projects["pg-mcp"].binary, "postgres-mcp")
+        self.assertEqual(projects["typedb-mcp"].repository, "tilmon-engineering/typedb-mcp")
+        self.assertEqual(projects["typedb-mcp"].binary, "typedb-mcp")
         self.assertEqual(len(projects["sqlite-mcp"].assets), 4)
         self.assertEqual(len(projects["pg-mcp"].assets), 4)
+        self.assertEqual(len(projects["typedb-mcp"].assets), 4)
         with self.assertRaises(ValidationError):
             load_projects(Path(__file__).resolve().parents[1] / "tests/fixtures/typedb-without-assets.json")
 
@@ -221,6 +227,10 @@ class ReleaseUpdaterTests(unittest.TestCase):
         hashes = re.findall(r'"([0-9a-f]{64})"', cask)
         self.assertEqual(len(hashes), 4)
         self.assertEqual(len(set(hashes)), 4)
+        typedb_cask = (ROOT / "Casks/typedb-mcp.rb").read_text()
+        self.assertIn('version "0.3.7"', typedb_cask)
+        self.assertIn('binary "typedb-mcp"', typedb_cask)
+        self.assertEqual(len(re.findall(r'"([0-9a-f]{64})"', typedb_cask)), 4)
 
     def test_render_updates_only_version_and_four_checksum_fields(self):
         release, artifacts, manifest = release_fixture(self.project)
@@ -552,7 +562,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
             self.assertIn(target, skill)
             self.assertIn(asset, skill)
         self.assertIn(pg_project.binary, skill)
-        self.assertIn("typedb-mcp` is not enrolled", skill)
+        self.assertIn("`typedb-mcp` was enrolled after published release `v0.3.7`", skill)
         self.assertIn("postgres-mcp`", skill)
         self.assertIn("both sqlite-mcp and pg-mcp", skill)
         self.assertIn("successful completion of `publish`, `verify-published`, and `verify-release-metadata`", skill)
