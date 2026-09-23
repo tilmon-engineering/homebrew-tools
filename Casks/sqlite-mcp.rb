@@ -2,11 +2,11 @@ cask "sqlite-mcp" do
   arch arm: "aarch64", intel: "x86_64"
   os macos: "apple-darwin", linux: "unknown-linux-gnu"
 
-  version "0.3.1"
-  sha256 arm:          "492d328805b42b921af92306de1e38fb8a30c6ffd080f776b55fc17266fabc7c",
-         intel:        "10ddbbd7becb77166ca9cc27b9e4c60c4a1bc44f036d8aebbc3a567e9288747b",
-         arm64_linux:  "c0ffbdd9edbf9c821dd878a062da0ac2c029737152c89961feb4533041c2556f",
-         x86_64_linux: "d48ab461429ec957fc80d165bfe34c545cf1a824ab4b14d654bb49d80e21e293"
+  version "0.4.0"
+  sha256 arm:          "b16a6ab3cd89b71f7e5bdbac2b2c1dac8504af33b8c8fc6cc05fdd494b249e17",
+         intel:        "1a427a5128d60e25271a13c184387cec524625c5e8c53e1f42aa9baabb4e61ce",
+         arm64_linux:  "f502f1b2d1946ba4639cd38238fa2eb29d7a934a825d1cca4b624f9cd26735b1",
+         x86_64_linux: "f696cdd98151efa7324ec6b977490bd1d289c34eb88977244634a704798cdaa8"
 
   url "https://github.com/tilmon-engineering/sqlite-mcp/releases/download/v#{version}/sqlite-mcp-#{arch}-#{os}.tar.gz"
   name "sqlite-mcp"
