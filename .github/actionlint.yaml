@@ -1,0 +1,4 @@
+paths:
+  .github/workflows/update-cask.yml:
+    ignore:
+      - 'unexpected key "queue" for "concurrency" section'
