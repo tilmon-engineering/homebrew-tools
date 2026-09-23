@@ -61,7 +61,14 @@ jobs:
           GITHUB_API_TOKEN: ${{ github.token }}
         run: python3 scripts/update_cask.py reconcile
 
-      - name: Commit only changed casks
+      - name: Commit and publish changed casks
         env:
           GITHUB_API_TOKEN: ${{ github.token }}
-        run: python3 scripts/update_cask.py commit-changed
+        run: |
+          set -euo pipefail
+          before="$(git rev-parse HEAD)"
+          python3 scripts/update_cask.py commit-changed
+          after="$(git rev-parse HEAD)"
+          if [[ "$after" != "$before" ]]; then
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
