@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "projects": [
+    {
+      "token": "typedb-mcp",
+      "repository": "tilmon-engineering/typedb-mcp",
+      "binary": "typedb-mcp",
+      "checksum_asset": "SHA256SUMS",
+      "assets": {},
+      "cask_path": "Casks/typedb-mcp.rb",
+      "support_note": "No published release assets are available from the GitHub Releases API.",
+      "producer_verification_jobs": []
+    }
+  ]
+}

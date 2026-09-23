@@ -1,0 +1,7 @@
+# Per-repository project tracker (managed via SQLite MCP; never commit local DB state).
+/project.sqlite3
+/project.sqlite3-shm
+/project.sqlite3-wal
+
+__pycache__/
+*.py[cod]

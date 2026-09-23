@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "projects": [
+    {
+      "token": "sqlite-mcp",
+      "repository": "tilmon-engineering/sqlite-mcp",
+      "binary": "sqlite-mcp",
+      "checksum_asset": "SHA256SUMS",
+      "assets": {
+        "x86_64-unknown-linux-gnu": "sqlite-mcp-x86_64-unknown-linux-gnu.tar.gz",
+        "aarch64-unknown-linux-gnu": "sqlite-mcp-aarch64-unknown-linux-gnu.tar.gz",
+        "aarch64-apple-darwin": "sqlite-mcp-aarch64-apple-darwin.tar.gz",
+        "x86_64-apple-darwin": "sqlite-mcp-x86_64-apple-darwin.tar.gz"
+      },
+      "cask_path": "Casks/sqlite-mcp.rb",
+      "support_note": "Release matrix validated on Ubuntu 24.04 GNU/glibc x86_64 and aarch64, and macOS 15 Intel and arm64.",
+      "verified_release": "v0.3.1",
+      "producer_publish_job": "publish",
+      "producer_verification_jobs": ["verify-published", "verify-release-metadata"]
+    },
+    {
+      "token": "pg-mcp",
+      "repository": "tilmon-engineering/pg-mcp",
+      "binary": "postgres-mcp",
+      "checksum_asset": "SHA256SUMS",
+      "assets": {
+        "x86_64-unknown-linux-gnu": "postgres-mcp-x86_64-unknown-linux-gnu.tar.gz",
+        "aarch64-unknown-linux-gnu": "postgres-mcp-aarch64-unknown-linux-gnu.tar.gz",
+        "aarch64-apple-darwin": "postgres-mcp-aarch64-apple-darwin.tar.gz",
+        "x86_64-apple-darwin": "postgres-mcp-x86_64-apple-darwin.tar.gz"
+      },
+      "cask_path": "Casks/pg-mcp.rb",
+      "support_note": "Release archives exist for GNU/glibc x86_64 and aarch64 Linux and Intel and arm64 macOS; do not infer older OS support from target triples alone.",
+      "verified_release": "v0.1.0",
+      "producer_workflow": ".github/workflows/release.yml",
+      "producer_publish_job": "publish",
+      "producer_verification_jobs": ["verify-published", "verify-release-metadata"]
+    }
+  ]
+}

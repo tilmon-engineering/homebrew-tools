@@ -1,0 +1,67 @@
+name: Update Homebrew casks
+
+on:
+  repository_dispatch:
+    types: [homebrew-tools-release]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Allowlisted cask token to replay
+        type: choice
+        required: true
+        options: [sqlite-mcp, pg-mcp]
+      tag:
+        description: Exact published stable release tag, such as v1.2.3
+        type: string
+        required: true
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homebrew-tools-cask-updates
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  update-casks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out tap default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update from verified repository dispatch
+        if: github.event_name == 'repository_dispatch'
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_cask.py event --event-file "$GITHUB_EVENT_PATH"
+
+      - name: Replay requested release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PROJECT_TOKEN: ${{ inputs.project }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          GITHUB_API_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_cask.py replay --project "$PROJECT_TOKEN" --tag "$RELEASE_TAG"
+
+      - name: Reconcile all enrolled projects
+        if: github.event_name == 'schedule'
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_cask.py reconcile
+
+      - name: Commit only changed casks
+        env:
+          GITHUB_API_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_cask.py commit-changed

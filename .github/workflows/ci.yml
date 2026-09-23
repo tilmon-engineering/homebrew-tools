@@ -1,0 +1,27 @@
+name: Tap checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: Homebrew/actions/setup-homebrew@master
+      - uses: rhysd/actionlint@v1.7.12
+      - name: Test release contract
+        run: python3 -m unittest discover -s tests -v
+      - name: Audit casks
+        run: brew audit --cask --strict tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp
+      - name: Style casks
+        run: brew style --cask tilmon-engineering/tools/sqlite-mcp tilmon-engineering/tools/pg-mcp
+      - name: Validate skill frontmatter and contracts
+        run: python3 scripts/validate_skill.py .agents/skills/homebrew-tools-release/SKILL.md

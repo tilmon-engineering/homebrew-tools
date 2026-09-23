@@ -1,0 +1,8 @@
+[project]
+name = "homebrew-tools-tap"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "Validated release-to-cask automation for the Tilmon Engineering Homebrew tap"
+
+[tool.ruff]
+line-length = 100
