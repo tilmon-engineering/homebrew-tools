@@ -2,11 +2,11 @@ cask "typedb-mcp" do
   arch arm: "aarch64", intel: "x86_64"
   os macos: "apple-darwin", linux: "unknown-linux-gnu"
 
-  version "0.3.7"
-  sha256 arm:          "768886f17883e04df3e0b3da6be5ea302c5e06139014d8b6fd84e3b277b12817",
-         intel:        "3c04b789f701b5ced32c3998c331b2338c16572cd978188cc366d5ddcfc3a301",
-         arm64_linux:  "991c6760c9d3eb06432bf97ec2fadf1e280d7349aa72c0df18b2cec60c21649a",
-         x86_64_linux: "0df6f88966990f9bbeb9a0b07994496a33fc0b02b3bde5842dd9f7e4d9dcdefb"
+  version "0.3.8"
+  sha256 arm:          "3617fdfa97b479398834126cd58e65f31086d1f99e3e387be6895cba03ff8d4f",
+         intel:        "48f8de1bac51711d64ce411ebd970cdbe7bab26d86d3533bc3b5e0a9575e41e2",
+         arm64_linux:  "9e52007cc3acdbcab7915b982dad3e67ccf2f0e900b4fc2403feaa7e56a2e481",
+         x86_64_linux: "59389f42da71fc717cf941542405e7cb2bac9ab160b8bd8e0c9129689b57eedf"
 
   url "https://github.com/tilmon-engineering/typedb-mcp/releases/download/v#{version}/typedb-mcp-#{arch}-#{os}.tar.gz"
   name "typedb-mcp"
