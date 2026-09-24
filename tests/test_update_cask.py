@@ -54,7 +54,15 @@ def archive_bytes(binary: str = "sqlite-mcp", payload: bytes = b"test executable
     return stream.getvalue()
 
 
-def release_fixture(project, version: str = "0.3.2", extra_assets: bool = False):
+def release_fixture(project, version: str | None = None, extra_assets: bool = False):
+    if version is None:
+        if project.token == "sqlite-mcp":
+            cask_text = (ROOT / "Casks/sqlite-mcp.rb").read_text(encoding="utf-8")
+            current = re.search(r'(?m)^  version "([^\"]+)"$', cask_text).group(1)
+            major, minor, patch = (int(part) for part in current.split("."))
+            version = f"{major}.{minor}.{patch + 1}"
+        else:
+            version = "0.3.2"
     tag = f"v{version}"
     artifacts = {name: archive_bytes(project.binary) for name in project.assets.values()}
     checksums = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in artifacts.items())
@@ -75,6 +83,10 @@ def release_fixture(project, version: str = "0.3.2", extra_assets: bool = False)
 class ReleaseUpdaterTests(unittest.TestCase):
     def setUp(self):
         self.project = load_projects()["sqlite-mcp"]
+        current = self.project.cask_path.read_text(encoding="utf-8")
+        self.current_version = re.search(r'(?m)^  version "([^"]+)"$', current).group(1)
+        major, minor, patch = (int(part) for part in self.current_version.split("."))
+        self.next_version = f"{major}.{minor}.{patch + 1}"
 
     def test_inventory_allowlist_is_single_and_exact(self):
         projects = load_projects()
@@ -109,7 +121,8 @@ class ReleaseUpdaterTests(unittest.TestCase):
 
     def test_valid_published_release_metadata_and_exact_asset_set(self):
         release, _, _ = release_fixture(self.project)
-        self.assertEqual(validate_release(release, self.project), ("0.3.2", (0, 3, 2)))
+        expected = tuple(int(part) for part in self.next_version.split("."))
+        self.assertEqual(validate_release(release, self.project), (self.next_version, expected))
         bad_state = dict(release)
         bad_state["assets"] = [dict(asset) for asset in release["assets"]]
         bad_state["assets"][0]["state"] = "new"
@@ -142,8 +155,9 @@ class ReleaseUpdaterTests(unittest.TestCase):
         from scripts import update_cask
         from scripts.update_cask import reconcile_projects
 
-        valid, archives, manifest = release_fixture(self.project, "0.3.2")
-        malformed = dict(valid, tag_name="v0.3.3", assets=[dict(valid["assets"][0], name=[]), *valid["assets"][1:]])
+        valid, archives, manifest = release_fixture(self.project, self.next_version)
+        major, minor, patch_component = (int(part) for part in self.next_version.split("."))
+        malformed = dict(valid, tag_name=f"v{major}.{minor}.{patch_component + 1}", assets=[dict(valid["assets"][0], name=[]), *valid["assets"][1:]])
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             assets_root = root / "fixtures" / self.project.token
@@ -167,7 +181,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 with patch.object(update_cask, "latest_release", return_value=[malformed, valid]):
                     with patch.object(update_cask, "materialize_release", side_effect=materialize_fixture):
                         self.assertTrue(reconcile_projects({project.token: project}))
-                self.assertIn('version "0.3.2"', project.cask_path.read_text())
+                self.assertIn(f'version "{self.next_version}"', project.cask_path.read_text())
 
     def test_checksum_manifest_must_be_exact_and_well_formed(self):
         _, _, manifest = release_fixture(self.project)
@@ -217,7 +231,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
 
     def test_cask_contract_has_real_pinned_values_for_all_targets(self):
         cask = (ROOT / "Casks/sqlite-mcp.rb").read_text()
-        self.assertIn('version "0.3.1"', cask)
+        self.assertIn(f'version "{self.current_version}"', cask)
         self.assertIn('binary "sqlite-mcp"', cask)
         self.assertNotIn("version :latest", cask)
         self.assertNotIn("sha256 :no_check", cask)
@@ -236,15 +250,15 @@ class ReleaseUpdaterTests(unittest.TestCase):
         release, artifacts, manifest = release_fixture(self.project)
         checksums = parse_checksums(manifest.decode(), self.project)
         current = (ROOT / "Casks/sqlite-mcp.rb").read_text()
-        updated = render_cask(self.project, "0.3.2", checksums, current)
-        self.assertIn('version "0.3.2"', updated)
+        updated = render_cask(self.project, self.next_version, checksums, current)
+        self.assertIn(f'version "{self.next_version}"', updated)
         self.assertEqual(updated.count('"' + '"'), 0)
         for name, digest in checksums.items():
             self.assertIn(f'"{digest}"', updated)
         def normalize(text):
             return re.sub(r"(?ms)^  sha256 .*?\n\n(?=  url )", "CHECKSUMS\n\n", text)
 
-        expected_non_checksum = current.replace('version "0.3.1"', 'version "0.3.2"')
+        expected_non_checksum = current.replace(f'version "{self.current_version}"', f'version "{self.next_version}"')
         self.assertEqual(normalize(updated), normalize(expected_non_checksum))
 
     def test_fixture_update_and_duplicate_event_are_noop(self):
@@ -258,10 +272,11 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 (fixture / name).write_bytes(data)
             with temporary_casks(root, {self.project.token: self.project}) as isolated:
                 project = isolated[self.project.token]
-                self.assertTrue(apply_release(project, release, "v0.3.2", fixture))
+                tag = release["tag_name"]
+                self.assertTrue(apply_release(project, release, tag, fixture))
                 updated = project.cask_path.read_text()
-                self.assertIn('version "0.3.2"', updated)
-                self.assertFalse(apply_release(project, release, "v0.3.2", fixture))
+                self.assertIn(f'version "{self.next_version}"', updated)
+                self.assertFalse(apply_release(project, release, tag, fixture))
                 self.assertEqual(project.cask_path.read_text(), updated)
 
     def test_invalid_fixture_does_not_write(self):
@@ -277,7 +292,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 project = isolated[self.project.token]
                 original = project.cask_path.read_text()
                 with self.assertRaisesRegex(ValidationError, "Downloaded bytes do not match SHA256SUMS"):
-                    apply_release(project, release, "v0.3.2", fixture)
+                    apply_release(project, release, release["tag_name"], fixture)
                 self.assertEqual(project.cask_path.read_text(), original)
 
     def test_stale_release_cannot_downgrade(self):
@@ -297,7 +312,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 self.assertEqual(project.cask_path.read_text(), original)
 
     def test_reconciliation_catches_missed_dispatch(self):
-        release, artifacts, manifest = release_fixture(self.project, "0.3.2")
+        release, artifacts, manifest = release_fixture(self.project, self.next_version)
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / self.project.token
             fixture.mkdir()
@@ -309,10 +324,10 @@ class ReleaseUpdaterTests(unittest.TestCase):
             with temporary_casks(Path(directory), {self.project.token: self.project}) as isolated:
                 project = isolated[self.project.token]
                 self.assertTrue(reconcile_projects({project.token: project}, fixture_dir=fixture.parent))
-                self.assertIn('version "0.3.2"', project.cask_path.read_text())
+                self.assertIn(f'version "{self.next_version}"', project.cask_path.read_text())
 
     def test_github_asset_digest_must_match_download_and_checksum_manifest(self):
-        release, artifacts, manifest = release_fixture(self.project, "0.3.2")
+        release, artifacts, manifest = release_fixture(self.project, self.next_version)
         release["assets"][0]["digest"] = "sha256:" + "0" * 64
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -325,14 +340,14 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 project = isolated[self.project.token]
                 original = project.cask_path.read_text()
                 with self.assertRaisesRegex(ValidationError, "GitHub's release asset digest"):
-                    apply_release(project, release, "v0.3.2", fixture)
+                    apply_release(project, release, release["tag_name"], fixture)
                 self.assertEqual(project.cask_path.read_text(), original)
 
     def test_same_version_cannot_change_pinned_checksums(self):
         current = self.project.cask_path.read_text()
         changed_checksums = {name: "0" * 64 for name in self.project.assets.values()}
         with self.assertRaisesRegex(ValidationError, "same-version"):
-            build_cask_update(self.project, "0.3.1", changed_checksums, current)
+            build_cask_update(self.project, self.current_version, changed_checksums, current)
 
     def test_reconciliation_rejects_rollback_without_mutating_earlier_casks(self):
         from dataclasses import replace
@@ -341,7 +356,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
         projects = load_projects()
         sqlite_project = projects["sqlite-mcp"]
         pg_project = projects["pg-mcp"]
-        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project, "0.3.2")
+        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project)
         pg_release, pg_archives, pg_manifest = release_fixture(pg_project, "0.0.9")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -380,7 +395,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
     def test_cask_path_outside_inventory_root_is_rejected(self):
         from dataclasses import replace
 
-        release, artifacts, manifest = release_fixture(self.project, "0.3.2")
+        release, artifacts, manifest = release_fixture(self.project, self.next_version)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fixture = root / "assets"
@@ -394,7 +409,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
             with temporary_casks(root, {self.project.token: self.project}) as isolated:
                 wrong_path = replace(isolated[self.project.token], cask_path=outside)
                 with self.assertRaisesRegex(ValidationError, "does not match token"):
-                    apply_release(wrong_path, release, "v0.3.2", fixture)
+                    apply_release(wrong_path, release, release["tag_name"], fixture)
                 self.assertEqual(outside.read_text(), sentinel)
 
     def test_cask_path_cannot_alias_another_inventory_token(self):
@@ -403,7 +418,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
         projects = load_projects()
         sqlite_project = projects["sqlite-mcp"]
         pg_project = projects["pg-mcp"]
-        sqlite_release, archives, manifest = release_fixture(sqlite_project, "0.3.2")
+        sqlite_release, archives, manifest = release_fixture(sqlite_project)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fixture = root / "assets"
@@ -415,7 +430,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
                 wrong_path = replace(isolated["sqlite-mcp"], cask_path=isolated["pg-mcp"].cask_path)
                 pg_before = isolated["pg-mcp"].cask_path.read_text()
                 with self.assertRaisesRegex(ValidationError, "does not match token"):
-                    apply_release(wrong_path, sqlite_release, "v0.3.2", fixture)
+                    apply_release(wrong_path, sqlite_release, sqlite_release["tag_name"], fixture)
                 self.assertEqual(isolated["pg-mcp"].cask_path.read_text(), pg_before)
 
     def test_symlinked_casks_directory_is_rejected(self):
@@ -443,7 +458,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
         projects = load_projects()
         sqlite_project = projects["sqlite-mcp"]
         pg_project = projects["pg-mcp"]
-        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project, "0.3.2")
+        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project)
         pg_release, pg_archives, pg_manifest = release_fixture(pg_project, "0.1.1")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -489,7 +504,7 @@ class ReleaseUpdaterTests(unittest.TestCase):
         projects = load_projects()
         sqlite_project = projects["sqlite-mcp"]
         pg_project = projects["pg-mcp"]
-        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project, "0.3.2")
+        sqlite_release, sqlite_archives, sqlite_manifest = release_fixture(sqlite_project)
         pg_release, pg_archives, pg_manifest = release_fixture(pg_project, "0.1.1")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
